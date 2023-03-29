@@ -2,13 +2,14 @@ import os
 import sqlite3
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Dict
+from typing import Dict, List
 
 import pandas as pd
 import wandb
 from langchain import PromptTemplate
 from langchain.agents import tool
 from langchain.chains import LLMChain
+from langchain.memory import ConversationBufferWindowMemory
 from langchain.schema import BaseLanguageModel
 from langchain.tools.base import BaseTool
 
@@ -139,22 +140,49 @@ def build_sql_db_tool(db, name, description) -> BaseTool:
     return tool(fn)  # type: ignore
 
 
-def build_human_in_the_loop_tool() -> BaseTool:
-    def human_in_the_loop(query):
-        ans = input(
-            f"""
+def build_agent_b_in_the_loop_tool():
+    template = """Assistant is a large language model trained by OpenAI. 
+    - Give short message (<20 words)
+
+    {history}
+    Human: {human_input}
+    Assistant:"""
+
+    prompt = PromptTemplate(
+        input_variables=["history", "human_input"], template=template
+    )
+
+    chatgpt_chain = LLMChain(
+        llm=llm,
+        prompt=prompt,
+        verbose=True,
+        memory=ConversationBufferWindowMemory(k=5),
+    )
+
+    @tool
+    def chat_in_the_loop(query):
+        """A chat bot in the loop tool. Use this for chatting.
+
+        Example queries: Hello, How are you?, What is your name?, etc.
+        """
+
+        return chatgpt_chain.predict(human_input=query)
+
+    return chat_in_the_loop
+
+
+@tool
+def human_in_the_loop(query):
+    """Human in the loop tool. Use this if you are not sure what to do."""
+    ans = input(
+        f"""
 --------------------------------------------------------
 Hi human, can you help solve the answer: "{query}"?\n"
 Answer: 
 """
-        )
-        print("--------------------------------------------------------")
-        return ans
-
-    human_in_the_loop.__doc__ = (
-        "Human in the loop tool. Use this if you are not sure what to do."
     )
-    return tool(human_in_the_loop)  # type: ignore
+    print("--------------------------------------------------------")
+    return ans
 
 
 @dataclass
@@ -191,7 +219,7 @@ class WandbApi:
         return {run.name: run.id for run in self.runs}
 
     @property
-    def tools(self):
+    def tools(self) -> List[BaseTool]:
         @tool
         def get_model_loss(name):
             """Get the loss of a model.
@@ -220,9 +248,9 @@ class WandbApi:
             name = name.strip(r"'")
             import webbrowser
 
-            id = self.name_to_id[name]
-            url = f"https://wandb.ai/haoyuan/my-awesome-project/runs/{id}?workspace=user-haoyuan"
             try:
+                id = self.name_to_id[name]
+                url = f"https://wandb.ai/haoyuan/my-awesome-project/runs/{id}?workspace=user-haoyuan"
                 webbrowser.open(url)
                 return f"I opened the training loss curve of {name} in your browser, with url: {url}"
             except Exception as e:
@@ -250,7 +278,7 @@ class WandbApi:
             get_all_model_names,
             get_model_config,
             plot_model_training_loss_curve,
-        ]
+        ]  # type: ignore
 
 
 # TODO

@@ -1,7 +1,13 @@
 #!/usr/bin/env python
+import signal
+
 import click
 
-from bot.agent import get_combined_agent, get_imdb_agent, get_vaction_agent
+from bot.bot import get_bot
+
+
+def signal_handler(sig, frame):
+    __import__("ipdb").set_trace()
 
 
 @click.command()
@@ -12,32 +18,36 @@ from bot.agent import get_combined_agent, get_imdb_agent, get_vaction_agent
     "--agent",
     "-a",
     prompt="Your choice",
-    type=click.Choice(["imdb", "vacation", "combined"]),
+    type=click.Choice(
+        ["zero-shot-react-description", "conversational-react-description"]
+    ),
     help="The choice to answer.",
     default="vacation",
 )
 def main(question, agent):
-    while True:
-        if agent == "imdb":
-            agent = get_imdb_agent()
-        elif agent == "vacation":
-            agent = get_vaction_agent()
-        elif agent == "combined":
-            agent = get_combined_agent()
-        agent.run(question)
-        user_input = input(
-            """
+    print(
+        """
 ************************************************
-* Nice to chat with you!                       *
-* You can quit by typing "quit" or "exit".     *
+* Welcome to the chatbot!                      *
+* You can use Ctrl+C to exit the program.      *
 * Otherwise, I will keep chatting with you :)  *
 ************************************************
-"""
-        )
-        if user_input in ["quit", "exit"]:
-            break
-        else:
-            question = user_input
+          """
+    )
+    bot = get_bot(agent)
+    while True:
+        bot.run(question)
+        signal.signal(signal.SIGINT, signal_handler)
+        s = input("User: ")
+        if s == "New Agent":
+            ss = input(
+                "1. zero-shot-react-description 2. conversational-react-description"
+            )
+            if ss == "1":
+                bot = get_bot("zero-shot-react-description")
+            elif ss == "2":
+                bot = get_bot("conversational-react-description")
+        question = s
 
 
 if __name__ == "__main__":
