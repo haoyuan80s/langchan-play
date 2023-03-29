@@ -1,5 +1,7 @@
+import os
 import sqlite3
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Dict
 
 import pandas as pd
@@ -12,17 +14,12 @@ from langchain.tools.base import BaseTool
 
 from .llm import llm
 
-DATA_PATH = "/Users/bytedance/Projects/qa-chain/langchan-play/bot/data/"
-
-
-def get_cursor(db_name):
-    conn = sqlite3.connect(DATA_PATH + db_name)
-    return conn.cursor()
+SQL_DB_PATH = os.getenv("SQL_DB_PATH", "$Home/data/")
 
 
 def tb_sql_prompt(db_name, tb_name):
     """Automatically generate a SQL prompt for the given LLM and prompt template."""
-    con = sqlite3.connect(DATA_PATH + db_name)
+    con = sqlite3.connect(SQL_DB_PATH + db_name)
     c = con.cursor()
     try:
         table_info = list(c.execute(f"PRAGMA table_info({tb_name});"))
@@ -39,7 +36,7 @@ def tb_sql_prompt(db_name, tb_name):
 def db_sql_prompt(db_name):
     """Automatically generate a SQL prompt for the given LLM and prompt template."""
 
-    con = sqlite3.connect(DATA_PATH + db_name)
+    con = sqlite3.connect(SQL_DB_PATH + db_name)
     c = con.cursor()
     tables = list(c.execute("SELECT name FROM sqlite_master WHERE type='table';"))
     table_names = [table[0] for table in tables]
@@ -78,7 +75,7 @@ schema: {', '.join([f'{k} {v}' for k, v in self.tabel_schema.items()])}
 
 def build_sql_table_tool(tb, db, name, description) -> BaseTool:
     def fn(sql_task_description):
-        con = sqlite3.connect(DATA_PATH + db)
+        con = sqlite3.connect(SQL_DB_PATH + db)
         cur = con.cursor()
         template = f"""
         {tb_sql_prompt(db, tb)}
@@ -111,7 +108,7 @@ def build_sql_table_tool(tb, db, name, description) -> BaseTool:
 
 def build_sql_db_tool(db, name, description) -> BaseTool:
     def fn(sql_task_description):
-        con = sqlite3.connect(DATA_PATH + db)
+        con = sqlite3.connect(SQL_DB_PATH + db)
         cur = con.cursor()
         template = f"""
         {db_sql_prompt(db)}
@@ -189,6 +186,10 @@ class WandbApi:
         )
         return runs_df
 
+    @cached_property
+    def name_to_id(self):
+        return {run.name: run.id for run in self.runs}
+
     @property
     def tools(self):
         @tool
@@ -213,6 +214,21 @@ class WandbApi:
             return str(self.dataframe["name"].tolist())
 
         @tool
+        def plot_model_training_loss_curve(name):
+            """Plot the training loss curve of all models. And open a learning curve tab in your browser."""
+
+            name = name.strip(r"'")
+            import webbrowser
+
+            id = self.name_to_id[name]
+            url = f"https://wandb.ai/haoyuan/my-awesome-project/runs/{id}?workspace=user-haoyuan"
+            try:
+                webbrowser.open(url)
+                return f"I opened the training loss curve of {name} in your browser, with url: {url}"
+            except Exception as e:
+                return f"Sorry, I can't find the loss of {name}. Error: {e}"
+
+        @tool
         def get_model_config(name):
             """Get the config of a model.
 
@@ -227,13 +243,13 @@ class WandbApi:
                     self.dataframe[self.dataframe["name"] == name].iloc[0]["config"]
                 )
             except Exception as e:
-                __import__("ipdb").set_trace()
                 return f"Sorry, I can't find the config of {name}. Error: {e}"
 
         return [
             get_model_loss,
             get_all_model_names,
             get_model_config,
+            plot_model_training_loss_curve,
         ]
 
 
