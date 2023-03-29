@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+import click
+
+from bot.agent import get_combined_agent, get_imdb_agent, get_vaction_agent
+
+
+@click.command()
+@click.option(
+    "--question", "-q", type=str, prompt="Your question", help="The question to answer."
+)
+@click.option(
+    "--agent",
+    "-a",
+    prompt="Your choice",
+    type=click.Choice(["imdb", "vacation", "combined"]),
+    help="The choice to answer.",
+    default="vacation",
+)
+def main(question, agent):
+    while True:
+        if agent == "imdb":
+            agent = get_imdb_agent()
+        elif agent == "vacation":
+            agent = get_vaction_agent()
+        elif agent == "combined":
+            agent = get_combined_agent()
+        agent.run(question)
+        user_input = input(
+            """
+************************************************
+* Nice to chat with you!                       *
+* You can quit by typing "quit" or "exit".     *
+* Otherwise, I will keep chatting with you :)  *
+************************************************
+"""
+        )
+        if user_input in ["quit", "exit"]:
+            break
+        else:
+            question = user_input
+
+
+if __name__ == "__main__":
+    main()
