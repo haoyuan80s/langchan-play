@@ -1,26 +1,27 @@
-import os
 import sqlite3
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Dict, List
 
+import numpy as np
 import pandas as pd
 import wandb
 from langchain import PromptTemplate
 from langchain.agents import tool
 from langchain.chains import LLMChain
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.memory import ConversationBufferWindowMemory
 from langchain.schema import BaseLanguageModel
 from langchain.tools.base import BaseTool
 
 from .llm import llm
 
-SQL_DB_PATH = os.getenv("SQL_DB_PATH", "$Home/data/")
+DATA_PATH = "/Users/bytedance/Projects/qa-chain/langchan-play/bot/data/"
 
 
 def tb_sql_prompt(db_name, tb_name):
     """Automatically generate a SQL prompt for the given LLM and prompt template."""
-    con = sqlite3.connect(SQL_DB_PATH + db_name)
+    con = sqlite3.connect(DATA_PATH + db_name)
     c = con.cursor()
     try:
         table_info = list(c.execute(f"PRAGMA table_info({tb_name});"))
@@ -37,7 +38,7 @@ def tb_sql_prompt(db_name, tb_name):
 def db_sql_prompt(db_name):
     """Automatically generate a SQL prompt for the given LLM and prompt template."""
 
-    con = sqlite3.connect(SQL_DB_PATH + db_name)
+    con = sqlite3.connect(DATA_PATH + db_name)
     c = con.cursor()
     tables = list(c.execute("SELECT name FROM sqlite_master WHERE type='table';"))
     table_names = [table[0] for table in tables]
@@ -76,12 +77,11 @@ schema: {', '.join([f'{k} {v}' for k, v in self.tabel_schema.items()])}
 
 def build_sql_table_tool(tb, db, name, description) -> BaseTool:
     def fn(sql_task_description):
-        con = sqlite3.connect(SQL_DB_PATH + db)
+        con = sqlite3.connect(DATA_PATH + db)
         cur = con.cursor()
         template = f"""
         {tb_sql_prompt(db, tb)}
         SQL task: {{sql_task_description}}.
-        SQL row limit: 100
         Please select specific columns and rows. (not select *)
         """
 
@@ -109,7 +109,7 @@ def build_sql_table_tool(tb, db, name, description) -> BaseTool:
 
 def build_sql_db_tool(db, name, description) -> BaseTool:
     def fn(sql_task_description):
-        con = sqlite3.connect(SQL_DB_PATH + db)
+        con = sqlite3.connect(DATA_PATH + db)
         cur = con.cursor()
         template = f"""
         {db_sql_prompt(db)}
@@ -183,6 +183,29 @@ Answer:
     )
     print("--------------------------------------------------------")
     return ans
+
+
+@tool
+def introduction(_):
+    """Introduction of the assistant."""
+    return """
+Hi, I am an assistant. I am based on a large language model trained by OpenAI.
+I am also familar with company specific tools and databases."""
+
+
+@tool
+def doc_search(query):
+    """A tool for search information in doc."""
+
+    with open(DATA_PATH + "doc.txt", "r") as f:
+        lines = f.readlines()
+
+    embeddings = OpenAIEmbeddings()
+    keys = np.array([embeddings.embed_query(line) for line in lines])
+    query = np.array(embeddings.embed_query(query))
+    # find id of key that is closest to query, measured by cosine distance
+    id = np.argmin(np.sum((keys - query) ** 2, axis=1))
+    return lines[id]
 
 
 @dataclass
@@ -279,7 +302,3 @@ class WandbApi:
             get_model_config,
             plot_model_training_loss_curve,
         ]  # type: ignore
-
-
-# TODO
-# - QA test tool

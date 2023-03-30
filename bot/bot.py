@@ -7,13 +7,20 @@ from langchain.memory import ConversationBufferMemory
 from langchain.tools.base import BaseTool
 
 from .llm import llm
-from .tools import WandbApi, build_sql_db_tool, build_sql_table_tool, human_in_the_loop
+from .tools import (
+    WandbApi,
+    build_sql_db_tool,
+    build_sql_table_tool,
+    doc_search,
+    human_in_the_loop,
+    introduction,
+)
 
 
 @dataclass
 class BotConfig:
     verbose: bool = True
-    max_iterations: int = 10
+    max_iterations: int = 30
 
 
 @dataclass
@@ -76,10 +83,13 @@ API for query imdb related information.
             human_in_the_loop,
             vacation_tool,
             # build_chat_in_the_loop_tool()
+            introduction,
+            doc_search,
         ]
         + wb.tools
     )
     return Bot(tools, llm, agent)
 
 
-# TODO join Agents
+# TODO
+# - switch bot more smoothly

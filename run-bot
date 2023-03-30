@@ -1,13 +1,8 @@
 #!/usr/bin/env python
-import signal
 
 import click
 
 from bot.bot import get_bot
-
-
-def signal_handler(sig, frame):
-    __import__("ipdb").set_trace()
 
 
 @click.command()
@@ -19,7 +14,14 @@ def signal_handler(sig, frame):
     "-a",
     prompt="Your choice",
     type=click.Choice(
-        ["zero-shot-react-description", "conversational-react-description"]
+        [
+            "zero-shot-react-description",
+            "react-docstore",
+            "self-ask-with-search",
+            "conversational-react-description",
+            "chat-zero-shot-react-description",
+            "chat-conversational-react-description",
+        ]
     ),
     help="The choice to answer.",
     default="vacation",
@@ -37,16 +39,30 @@ def main(question, agent):
     bot = get_bot(agent)
     while True:
         bot.run(question)
-        signal.signal(signal.SIGINT, signal_handler)
         s = input("User: ")
         if s == "New Agent":
             ss = input(
-                "1. zero-shot-react-description 2. conversational-react-description"
+                """
+                1: zero-shot-react-description
+                2: react-docstore
+                3: self-ask-with-search
+                4: conversational-react-description
+                5: chat-zero-shot-react-description
+                6: chat-conversational-react-description
+                """
             )
             if ss == "1":
                 bot = get_bot("zero-shot-react-description")
             elif ss == "2":
+                bot = get_bot("react-docstore")
+            elif ss == "3":
+                bot = get_bot("self-ask-with-search")
+            elif ss == "4":
                 bot = get_bot("conversational-react-description")
+            elif ss == "5":
+                bot = get_bot("chat-zero-shot-react-description")
+            elif ss == "6":
+                bot = get_bot("chat-conversational-react-description")
         question = s
 
 
