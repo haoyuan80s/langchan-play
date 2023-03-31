@@ -41,7 +41,7 @@ sequenceDiagram
     end
 ```
 
-The book "Thinking, Fast and Slow" discuss two systems:
+The book "Thinking, Fast and Slow" describes two systems in a human brain:
   + System 1 is fast and intuitive, operates automatically and unconsciously, and helps us make quick judgments and react to our environment.
   + System 2 is slow, conscious, and used for complex tasks like problem-solving or decision-making. It requires effort, enables logical reasoning, and systematic analysis.
 
