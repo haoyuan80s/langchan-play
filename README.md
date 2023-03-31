@@ -1,40 +1,4 @@
-## Modulo Relations:
-
-```mermaid
-graph TD;
-    U[User]
-    subgraph Bot
-        A[Agent]
-        H[Chatting History]
-        P[User Profile]
-        E[Embedding Store]
-        subgraph Agent-Memory; style Agent-Memory fill:#DFFFFF
-            S[Short Term Memory]
-            L[Long Term Memory]
-        end
-        subgraph Tools; style Tools fill:#DFFFFF
-            T1[Vacation Tool]
-            T2[ML Monitor Tool]
-            T3[Human In The Loop Tool]
-        end
-    end
-
-    U --Show me my recent ML model learning curve?--> A
-    A -- Can I can answer this self? Yes/No--> A
-    A ---> S
-    S ---> P
-    H ---> S
-    A ---> L
-    L ---> E
-    A --Can answer?----> T1
-    T1 --Yes/No----> A
-    A --Can answer?----> T2
-    T2 --Yes/No----> A
-    A --Can answer?----> T3
-    T3 --Yes/No----> A
-```
-
-## Event Sequence:
+## Modules and Event Sequence:
 
 ```mermaid
 sequenceDiagram
@@ -80,8 +44,8 @@ sequenceDiagram
 This design is motivated by the book "Thinking, Fast and Slow", which discusses two systems:
   + System 1 is fast and intuitive, operates automatically and unconsciously, and helps us make quick judgments and react to our environment. 
   + System 2 is slow, conscious, and used for complex tasks like problem-solving or decision-making. It requires effort, enables logical reasoning, and systematic analysis. ==> Tools
+* Agent is 
 
-In the LangChain library:
 - System1 is Agent which handles
   + Intuitive/easy question 
   + Coordination
@@ -91,7 +55,8 @@ In the LangChain library:
   + Math
   + Information retrieval
   + ...
-## [Demo recording](https://www.dropbox.com/s/mdwcg1f8uali5ma/Screen%20Recording%202023-03-30%20at%2011.36.05%20AM.mov?dl=0)
+
+
 
 
 
