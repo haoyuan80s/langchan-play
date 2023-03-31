@@ -1,4 +1,4 @@
-
+## Modulo Relations:
 
 ```mermaid
 graph TD;
@@ -33,6 +33,8 @@ graph TD;
     A --Can answer?----> T3
     T3 --Yes/No----> A
 ```
+
+## Event Sequence:
 
 ```mermaid
 sequenceDiagram
@@ -71,6 +73,28 @@ sequenceDiagram
     M-->>A: Return MachineLearningTool's answer
     par Agent reflection
         A-->>A: Can can answer the query given the context and tools' answer?. Yes
+        A-->>U: The loss for ML model ABC is 0.96
     end
-    A-->>U: The loss for ML model ABC is 0.96
 ```
+
+This design is motivated by the book "Thinking, Fast and Slow", which discusses two systems:
+  + System 1 is fast and intuitive, operates automatically and unconsciously, and helps us make quick judgments and react to our environment. 
+  + System 2 is slow, conscious, and used for complex tasks like problem-solving or decision-making. It requires effort, enables logical reasoning, and systematic analysis. ==> Tools
+
+In the LangChain library:
+- System1 is Agent which handles
+  + Intuitive/easy question 
+  + Coordination
+  + Communication
+  + ...
+- System2 consists of Tools which handles complex tasks:
+  + Math
+  + Information retrieval
+  + ...
+
+
+
+
+
+
+
